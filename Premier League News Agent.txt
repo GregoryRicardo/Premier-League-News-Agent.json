@@ -1,0 +1,17 @@
+# Morning News Automation (n8n)
+
+## 🔄 Description
+This n8n workflow pulls latest news headlines using NewsAPI, filters them, and sends them to WhatsApp via Twilio.
+
+## 📁 Files
+- `news-api-whatsapp-alert.json`: The exported workflow (import into n8n)
+
+## ⚙️ Setup
+1. Import the workflow into n8n
+2. Add credentials:
+   - Twilio (Account SID, Auth Token)
+   - NewsAPI (API Key)
+3. Test the webhook or schedule
+
+## 📸 Preview
+![screenshot](./preview.png)

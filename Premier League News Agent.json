@@ -1,0 +1,166 @@
+{
+  "name": "Premier League News Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "daysInterval": 2,
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        780,
+        -20
+      ],
+      "id": "9bb3e949-3a44-4f2d-ad48-f0fcda33d4b7",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Defensive extraction of articles array\nconst articles = Array.isArray($input.all()[0]?.json?.articles) ? $input.all()[0].json.articles : [];\n\n// Limit to first 5 articles\nconst topArticles = articles.slice(0, 5);\n\n// Extract news data\nconst news = topArticles.map(article => ({\n  title: article.title || \"Untitled Premier League Update\",\n  link: article.url || \"#\"\n})).slice(0, 3); // Limit to first 3 for template\n\n// Return a single item with news array\nreturn [{\n  json: {\n    news\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        300
+      ],
+      "id": "984b5fa5-f782-4b1f-aa3a-b28180679dd8",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C09767CEFPD",
+          "mode": "list",
+          "cachedResultName": "all-bobsai"
+        },
+        "text": "=🏈 *Daily Premier League News* 📰\n\n{{ $node[\"Code\"].json[\"news\"][0][\"title\"] }}\n{{ $node[\"Code\"].json[\"news\"][0][\"link\"] }}\n\n{{ $node[\"Code\"].json[\"news\"][1][\"title\"] }}\n{{ $node[\"Code\"].json[\"news\"][1][\"link\"] }}\n\n{{ $node[\"Code\"].json[\"news\"][2][\"title\"] }}\n{{ $node[\"Code\"].json[\"news\"][2][\"link\"] }}\n",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        1760,
+        -20
+      ],
+      "id": "369a5927-eb8c-45e9-b66b-71a1209289c2",
+      "name": "Send a message",
+      "webhookId": "2d11b8ca-abe0-4249-b3df-d4252d7b2927",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "nsCFI0tiH6yUIuZM",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://newsapi.org/v2/everything?q=\"Premier League\"&domains=bbc.co.uk,skysports.com,espn.com,theguardian.com,independent.co.uk&language=en&sortBy=publishedAt&apiKey=e4fe07e1018d48a8b02955721ef858a5",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        260
+      ],
+      "id": "df487400-40e0-4cc0-85bd-078f08812b2a",
+      "name": "News"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.twilio.com/2010-04-01/Accounts/AC0174454d36414750668b373ff6224070/Messages.json\n\n",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "From=whatsapp:+14155238886\nTo=whatsapp:+YOUR_RECIPIENT_NUMBER\nBody=Your message text here (e.g. Premier League news summary)\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1480,
+        -100
+      ],
+      "id": "6f392b91-2724-4c83-a658-f48255c04497",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "ZhI06821MXbTobAY",
+          "name": "Unnamed credential"
+        }
+      },
+      "disabled": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "News": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "4690b650-1ebe-4202-aa99-5553cc57d797",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1b219ffd2b524751c1f1d7e4ac0ebc93ab400933de1adb7c94034903d2928a1f"
+  },
+  "id": "zJUJLj7MRJXsWcN4",
+  "tags": []
+}

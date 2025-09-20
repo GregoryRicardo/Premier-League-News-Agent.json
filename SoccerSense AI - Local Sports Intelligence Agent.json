@@ -1,0 +1,249 @@
+{
+  "name": "SoccerSense AI - Local Sports Intelligence Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        112,
+        -912
+      ],
+      "id": "b5c55b36-6740-49f8-a6bc-9267a99ad909",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Fixed Function - Clean News Data\n// This processes the News API response correctly\n\n// Get the raw News API data\nconst newsApiData = $input.all();\nconsole.log('📥 Raw News API data:', newsApiData.length, 'items');\n\n// Log the structure of the first item to understand the format\nif (newsApiData.length > 0) {\n  console.log('🔍 First raw item structure:', JSON.stringify(newsApiData[0].json, null, 2));\n}\n\nconst cleanedArticles = [];\n\nfor (const item of newsApiData) {\n  const rawData = item.json;\n  \n  // Handle NewsAPI response structure\n  let articles = [];\n  \n  if (rawData.articles && Array.isArray(rawData.articles)) {\n    // Standard NewsAPI response: { articles: [...] }\n    articles = rawData.articles;\n    console.log('📰 Found', articles.length, 'articles in NewsAPI response');\n  } else if (Array.isArray(rawData)) {\n    // Direct array of articles\n    articles = rawData;\n  } else if (rawData.title) {\n    // Single article object\n    articles = [rawData];\n  } else {\n    console.log('⚠️ Unexpected data structure:', Object.keys(rawData));\n    continue;\n  }\n  \n  // Process each article\n  for (const article of articles) {\n    // Skip articles with missing essential data\n    if (!article.title || article.title === \"[Removed]\") {\n      console.log('⏭️ Skipping article with missing/removed title');\n      continue;\n    }\n    \n    const cleanedArticle = {\n      title: article.title || '',\n      description: article.description || '',\n      content: article.content || article.description || '',\n      url: article.url || '',\n      publishedAt: article.publishedAt || '',\n      source: article.source?.name || article.source || '',\n      author: article.author || '',\n      urlToImage: article.urlToImage || ''\n    };\n    \n    console.log('✅ Cleaned article:', {\n      title: cleanedArticle.title.substring(0, 50) + '...',\n      hasDescription: !!cleanedArticle.description,\n      hasContent: !!cleanedArticle.content,\n      source: cleanedArticle.source\n    });\n    \n    cleanedArticles.push(cleanedArticle);\n  }\n}\n\nconsole.log('📤 Returning', cleanedArticles.length, 'cleaned articles');\n\n// Return in proper n8n format\nreturn cleanedArticles.map(article => ({ json: article }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        -912
+      ],
+      "id": "2057b52e-7697-4345-b1a4-7cee7c5e92a6",
+      "name": "Function - Clean News Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "const processedItems = [];\nconst cleanedData = $('Function - Clean News Data').all();\n\nfor (let i = 0; i < $input.all().length; i++) {\n  const aiItem = $input.all()[i];\n  const originalData = cleanedData[i]?.json || {};\n  const aiAnalysis = aiItem.json.choices?.[0]?.message?.content || '';\n  \n  processedItems.push({\n    json: {\n      ...originalData,\n      ai_summary: aiAnalysis,\n      final_processed_at: new Date().toISOString()\n    }\n  });\n}\n\nreturn processedItems;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1232,
+        -912
+      ],
+      "id": "8e789f98-25e3-4801-b44c-4803f2a72e4f",
+      "name": "Function - Merge AI Results"
+    },
+    {
+      "parameters": {
+        "sendTo": "Gregoryricardo.photography@gmail.com",
+        "subject": "=Premier League and UEFA Champions LeagueNews: {{ $json.title }}",
+        "message": "=<!DOCTYPE html>\n<html>\n<head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Premier League News Update</title>\n</head>\n<body style=\"margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\">\n    \n    <!-- Main Container -->\n    <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"background-color: #f8fafc; padding: 30px 20px;\">\n        <tr>\n            <td align=\"center\">\n                <!-- Email Content -->\n                <table width=\"650\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"max-width: 650px; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;\">\n                    \n                    <!-- Header with Gradient -->\n                    <tr>\n                        <td style=\"padding: 0; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #06b6d4 100%); position: relative;\">\n                            <!-- Header Content -->\n                            <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\">\n                                <tr>\n                                    <td style=\"padding: 24px 32px; color: #ffffff; position: relative; z-index: 2;\">\n                                        <h1 style=\"margin: 0 0 8px; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;\">⚽ Premier League News</h1>\n                                        <p style=\"margin: 0; font-size: 14px; color: rgba(255,255,255,0.9); font-weight: 500;\">AI-Powered Sports Analysis • Real-time Updates</p>\n                                    </td>\n                                    <td align=\"right\" style=\"padding: 24px 32px;\">\n                                        <div style=\"background: rgba(255,255,255,0.2); border-radius: 8px; padding: 8px 12px; backdrop-filter: blur(10px);\">\n                                            <span style=\"color: #ffffff; font-size: 12px; font-weight: 600;\">{{ new Date().toLocaleDateString() }}</span>\n                                        </div>\n                                    </td>\n                                </tr>\n                            </table>\n                        </td>\n                    </tr>\n\n                    <!-- Featured Image -->\n                    <tr>\n                        <td style=\"padding: 0;\">\n                            <img src=\"{{ $json.image_url || 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=650&h=300&fit=crop&crop=center' }}\" \n                                 alt=\"News Image\" \n                                 width=\"650\" \n                                 height=\"300\" \n                                 style=\"width: 100%; height: 300px; object-fit: cover; display: block; border: none;\">\n                        </td>\n                    </tr>\n\n                    <!-- Article Content -->\n                    <tr>\n                        <td style=\"padding: 32px;\">\n                            \n                            <!-- Title Section -->\n                            <div style=\"margin-bottom: 24px;\">\n                                <h2 style=\"margin: 0 0 12px; font-size: 28px; font-weight: 700; color: #1e293b; line-height: 1.3; letter-spacing: -0.5px;\">{{ $json.title }}</h2>\n                                <div style=\"display: flex; align-items: center; gap: 16px; margin-bottom: 16px;\">\n                                    <span style=\"background: #3b82f6; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase;\">{{ $json.competition || 'Premier League' }}</span>\n                                    <span style=\"color: #64748b; font-size: 14px;\">{{ $json.source || 'Sports News' }}</span>\n                                    <span style=\"color: #94a3b8; font-size: 12px;\">{{ $json.published || new Date().toLocaleDateString() }}</span>\n                                </div>\n                            </div>\n\n                            <!-- AI Summary Card -->\n                            <div style=\"background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin-bottom: 28px; position: relative;\">\n                                <div style=\"display: flex; align-items: center; margin-bottom: 16px;\">\n                                    <div style=\"background: linear-gradient(135deg, #8b5cf6, #a855f7); width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 12px;\">\n                                        <span style=\"color: white; font-size: 16px;\">🤖</span>\n                                    </div>\n                                    <h3 style=\"margin: 0; font-size: 16px; font-weight: 600; color: #374151;\">AI Analysis</h3>\n                                </div>\n                                <div style=\"color: #374151; font-size: 15px; line-height: 1.6; font-weight: 400;\">{{ $json.ai_summary || $json.description }}</div>\n                            </div>\n\n                            <!-- Teams & Players -->\n                            <div style=\"margin-bottom: 28px;\">\n                                <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\">\n                                    <tr>\n                                        <td width=\"50%\" style=\"padding-right: 12px;\">\n                                            <div style=\"background: #ede9fe; border: 1px solid #c4b5fd; border-radius: 8px; padding: 16px;\">\n                                                <div style=\"font-size: 12px; font-weight: 600; color: #5b21b6; text-transform: uppercase; margin-bottom: 8px;\">⚽ Teams Involved</div>\n                                                <div style=\"font-size: 14px; color: #6b21a8; font-weight: 500;\">{{ $json.teams || 'Multiple Teams' }}</div>\n                                            </div>\n                                        </td>\n                                        <td width=\"50%\" style=\"padding-left: 12px;\">\n                                            <div style=\"background: #fce7f3; border: 1px solid #f9a8d4; border-radius: 8px; padding: 16px;\">\n                                                <div style=\"font-size: 12px; font-weight: 600; color: #be185d; text-transform: uppercase; margin-bottom: 8px;\">👤 Key Players</div>\n                                                <div style=\"font-size: 14px; color: #be185d; font-weight: 500;\">{{ $json.players || 'Various Players' }}</div>\n                                            </div>\n                                        </td>\n                                    </tr>\n                                </table>\n                            </div>\n\n                            <!-- Call to Action -->\n                            <div style=\"text-align: center; margin-top: 32px;\">\n                                <a href=\"{{ $json.url || '#' }}\" \n                                   style=\"display: inline-block; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); transition: all 0.3s ease;\">\n                                    📖 Read Full Article\n                                </a>\n                            </div>\n\n                        </td>\n                    </tr>\n\n                    <!-- Footer -->\n                    <tr>\n                        <td style=\"padding: 24px 32px; background: #f8fafc; border-top: 1px solid #e2e8f0;\">\n                            <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\">\n                                <tr>\n                                    <td>\n                                        <p style=\"margin: 0 0 8px; color: #64748b; font-size: 12px; line-height: 1.5;\">\n                                            <strong>Analysis completed at:</strong> {{ new Date().toLocaleString() }}\n                                        </p>\n                                        <p style=\"margin: 0; color: #94a3b8; font-size: 11px;\">\n                                            You are receiving this automated briefing because you subscribed to Premier League updates.\n                                        </p>\n                                    </td>\n                                    <td align=\"right\">\n                                        <div style=\"background: #3b82f6; color: white; padding: 6px 12px; border-radius: 6px; font-size: 10px; font-weight: 600;\">\n                                            POWERED BY AI\n                                        </div>\n                                    </td>\n                                </tr>\n                            </table>\n                        </td>\n                    </tr>\n\n                </table>\n            </td>\n        </tr>\n    </table>\n\n</body>\n</html>\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1456,
+        -912
+      ],
+      "id": "1ee41a4c-4616-4e3f-a25f-35293254b214",
+      "name": "Email Notification",
+      "webhookId": "670f4f5f-5d40-43db-85e6-a7d9f0d15881",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Qw4BSOcmTndIaz7p",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://newsapi.org/v2/everything?q=PremierLeague&language=en&sortBy=publishedAt&apiKey=e4fe07e1018d48a8b02955721ef858a5\n",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"url\": \"https://newsapi.org/v2/everything\",\n  \"method\": \"GET\",\n  \"headers\": {\n    \"X-API-Key\": \"{{ $credentials.newsapi.api_key }}\"\n  },\n  \"qs\": {\n    \"q\": \"Premier League OR EPL OR English Premier League\",\n    \"language\": \"en\",\n    \"sortBy\": \"publishedAt\",\n    \"pageSize\": \"50\",\n    \"from\": \"{{ $now.minus({hours: 6}).toISO() }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        336,
+        -1008
+      ],
+      "id": "9fca1680-c88c-4a18-b708-9fc2e84919ed",
+      "name": "HTTP Request-Premier League"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        560,
+        -912
+      ],
+      "id": "fc4ef9e7-4de6-49f1-aeb2-8dc76d841d4d",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "url": "https://newsapi.org/v2/everything?q=ChampionsLeague&language=en&sortBy=publishedAt&apiKey=e4fe07e1018d48a8b02955721ef858a5",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"url\": \"https://newsapi.org/v2/everything\",\n  \"method\": \"GET\",\n  \"headers\": {\n    \"X-API-Key\": \"{{ $credentials.newsapi.api_key }}\"\n  },\n  \"qs\": {\n    \"q\": \"Champions League OR UEFA Champions League\",\n    \"language\": \"en\",\n    \"sortBy\": \"publishedAt\",\n    \"pageSize\": \"50\",\n    \"from\": \"{{ $now.minus({hours: 6}).toISO() }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        336,
+        -816
+      ],
+      "id": "3ec47cc3-a876-4feb-98a4-3d08a4250330",
+      "name": "HTTP Request-Champions League"
+    },
+    {
+      "parameters": {
+        "resource": "assistant",
+        "operation": "create",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "name": "My Assistant",
+        "instructions": "You are a seasoned sports journalist specializing in Premier League and Champions League coverage. Analyze the provided news article and produce a concise yet insightful summary.\n\nHighlight key storylines and the broader trend/implication (e.g., title race, form, tactical shift, injury impact).\n\nIdentify the standout performances with emphasis on Key Players (goalscorers, assists, defensive contributions, managerial decisions).\n\nProvide contextual significance (league standing impact, upcoming fixtures relevance, rival comparisons).\n\nWrite in a professional, journalistic tone that blends factual reporting with analytical depth.\n\nKeep the output clear and scannable (2–4 short paragraphs or structured bullet points).",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        1008,
+        -912
+      ],
+      "id": "504d58a0-6856-4b9b-85dd-c1c321e2e464",
+      "name": "Create an assistant",
+      "credentials": {
+        "openAiApi": {
+          "id": "Mv9XlXJPrwyX2NJy",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request-Premier League",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request-Champions League",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Function - Clean News Data": {
+      "main": [
+        [
+          {
+            "node": "Create an assistant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Function - Merge AI Results": {
+      "main": [
+        [
+          {
+            "node": "Email Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Notification": {
+      "main": [
+        []
+      ]
+    },
+    "HTTP Request-Premier League": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Function - Clean News Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request-Champions League": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Create an assistant": {
+      "main": [
+        [
+          {
+            "node": "Function - Merge AI Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6afab42a-365b-401e-a7a7-a32defa0a7c4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ae9d420ed6486d54da35c2a5ed0f3f36bb07a9a0bf42ac15b0d3ebd85c98ecac"
+  },
+  "id": "1D14pDhCobaCOnqJ",
+  "tags": []
+}
